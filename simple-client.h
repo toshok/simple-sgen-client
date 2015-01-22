@@ -10,8 +10,6 @@ typedef struct {
 typedef struct _GCObject GCObject;
 struct _GCObject {
 	GCVTable *vtable;
-	GCObject *car;
-	GCObject *cdr;
 };
 
 typedef struct {
