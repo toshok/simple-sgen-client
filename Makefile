@@ -2,7 +2,7 @@ all : test-sgen
 
 MONO_DIR = mono
 
-SOURCES = \
+SGEN_SOURCES = \
 	$(MONO_DIR)/mono/metadata/sgen-gc.c		\
 	$(MONO_DIR)/mono/metadata/sgen-alloc.c	\
 	$(MONO_DIR)/mono/metadata/sgen-nursery-allocator.c	\
@@ -32,9 +32,22 @@ SOURCES = \
 	$(MONO_DIR)/mono/utils/lock-free-alloc.c	\
 	$(MONO_DIR)/mono/utils/lock-free-array-queue.c	\
 	$(MONO_DIR)/mono/utils/hazard-pointer.c	\
-	simple-client.c			\
-	test-sgen.c
+	simple-client.c
+
+SGEN_OBJECTS=$(SGEN_SOURCES:%.c=%.o)
+
+CFLAGS=-std=gnu99 -Wall -DHAVE_SGEN_GC -DSGEN_CLIENT_HEADER=\"simple-client.h\" -DSGEN_WITHOUT_MONO -O0 -g -I. -I./$(MONO_DIR)/ $(SOURCES) $(shell pkg-config --cflags glib-2.0)
+LDFLAGS=-lpthread -lm $(shell pkg-config --libs glib-2.0)
 
 
-test-sgen : Makefile $(SOURCES)
-	gcc -std=gnu99 -o test-sgen -Wall -DHAVE_SGEN_GC -DSGEN_CLIENT_HEADER=\"simple-client.h\" -DSGEN_WITHOUT_MONO -O0 -g -I. -I./$(MONO_DIR)/ $(SOURCES) `pkg-config --cflags --libs glib-2.0` -lpthread -lm
+all: test-sgen libpystonsgen.a
+
+test_sgen_SOURCES=$(SGEN_SOURCES) test-sgen.c
+test_sgen_OBJECTS=$(test_sgen_SOURCES:%.c=%.o)
+
+test-sgen: $(test_sgen_OBJECTS) Makefile
+	$(CC) -o $@ $(CFLAGS) $(test_sgen_OBJECTS) $(LDFLAGS)
+
+
+libpystonsgen.a: $(SGEN_OBJECTS)
+	ar cru $@ $(SGEN_OBJECTS)
