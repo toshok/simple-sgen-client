@@ -40,7 +40,7 @@ CFLAGS=-std=gnu99 -Wall -DHAVE_SGEN_GC -DSGEN_CLIENT_HEADER=\"simple-client.h\" 
 LDFLAGS=-lpthread -lm $(shell pkg-config --libs glib-2.0)
 
 
-all: test-sgen libpystonsgen.a
+all: test-sgen libpystonsgen.a mono-config.h
 
 test_sgen_SOURCES=$(SGEN_SOURCES) test-sgen.c
 test_sgen_OBJECTS=$(test_sgen_SOURCES:%.c=%.o)
@@ -51,3 +51,6 @@ test-sgen: $(test_sgen_OBJECTS) Makefile
 
 libpystonsgen.a: $(SGEN_OBJECTS)
 	ar cru $@ $(SGEN_OBJECTS)
+
+mono-config.h: mono/config.h
+	cp $< $@

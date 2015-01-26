@@ -3,3 +3,4 @@ test-sgen
 test-sgen.dSYM
 *.o
 *.a
+mono-config.h
