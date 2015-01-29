@@ -1,8 +1,8 @@
-#include <glib.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <string.h>
 
+#include "glib.h"
 #include "mono/metadata/sgen-gc.h"
 #include "mono/metadata/sgen-client.h"
 #include "mono/metadata/sgen-pinning.h"
@@ -135,11 +135,13 @@ sgen_client_nursery_objects_pinned (void **definitely_pinned, int count)
 void
 sgen_client_collecting_minor (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *critical_fin_queue)
 {
+  printf ("sgen_client_collecting_minor\n");
 }
 
 void
 sgen_client_collecting_major_1 (void)
 {
+  printf ("sgen_client_collecting_major_1\n");
 }
 
 void
@@ -151,6 +153,7 @@ sgen_client_pinned_los_object (char *obj)
 void
 sgen_client_collecting_major_2 (void)
 {
+  printf ("sgen_client_collecting_major_2\n");
 }
 
 void
@@ -298,7 +301,7 @@ mono_thread_info_get_small_id (void)
 {
 	gpointer value = pthread_getspecific (small_id_key);
 	g_assert (value);
-	return ((int)value) - 1;
+	return GPOINTER_TO_INT(value) - 1;
 }
 
 void

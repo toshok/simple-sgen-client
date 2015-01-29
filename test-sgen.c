@@ -47,12 +47,12 @@ int
 main (void)
 {
 	void *dummy;
-	gsize cons_bitmap = 6;
+	gsize cons_bitmap = 12;
 
 	sgen_gc_init ();
 	sgen_thread_register (&main_thread_info, &dummy);
 
-	cons_vtable.descriptor = (mword)mono_gc_make_descr_for_object (&cons_bitmap, 2, sizeof (ConsObject));
+	cons_vtable.descriptor = (mword)mono_gc_make_descr_for_object (&cons_bitmap, 4, sizeof (ConsObject));
 
 	run ();
 

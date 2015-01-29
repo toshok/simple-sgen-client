@@ -10,6 +10,7 @@ typedef struct {
 typedef struct _GCObject GCObject;
 struct _GCObject {
 	GCVTable *vtable;
+	void* synchronisation;
 };
 
 typedef struct {
@@ -74,18 +75,16 @@ extern SgenThreadInfo main_thread_info;
 typedef struct
 {
 	int value;
-	GMutex access;
-	GCond sig;
+        pthread_mutex_t access;
+	pthread_cond_t sig;
 } SgenSemaphore;
 
 static inline void
 SGEN_SEMAPHORE_INIT (SgenSemaphore *sem, int initial)
 {
-	g_assert (g_thread_supported ());
-
 	sem->value = initial;
-	g_mutex_init (&sem->access);
-	g_cond_init (&sem->sig);
+	pthread_mutex_init(&sem->access, NULL);
+	pthread_cond_init(&sem->sig, NULL);
 }
 
 static inline void
@@ -93,10 +92,10 @@ SGEN_SEMAPHORE_POST (SgenSemaphore* sem)
 {
 	g_assert (sem);
 
-	g_mutex_lock (&sem->access);
+	pthread_mutex_lock (&sem->access);
 	++sem->value;
-	g_mutex_unlock (&sem->access);
-	g_cond_signal (&sem->sig);
+	pthread_cond_signal (&sem->sig);
+	pthread_mutex_unlock (&sem->access);
 }
 
 static inline void
@@ -104,11 +103,11 @@ SGEN_SEMAPHORE_WAIT (SgenSemaphore* sem)
 {
 	g_assert (sem);
 
-	g_mutex_lock (&sem->access);
+	pthread_mutex_lock (&sem->access);
 	while (sem->value < 1)
-		g_cond_wait (&sem->sig, &sem->access);
+		pthread_cond_wait (&sem->sig, &sem->access);
 	--sem->value;
-	g_mutex_unlock (&sem->access);
+	pthread_mutex_unlock (&sem->access);
 }
 
 #include <sys/time.h>
