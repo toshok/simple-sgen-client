@@ -1,8 +1,19 @@
 all : test-sgen
 
-MONO_DIR = mono
+MONO_DIR?=mono
 
-SGEN_SOURCES = \
+EGLIB_SOURCES = \
+	$(MONO_DIR)/eglib/src/gdate-unix.c \
+	$(MONO_DIR)/eglib/src/gerror.c \
+	$(MONO_DIR)/eglib/src/glist.c \
+	$(MONO_DIR)/eglib/src/goutput.c \
+	$(MONO_DIR)/eglib/src/gmem.c \
+	$(MONO_DIR)/eglib/src/gmisc-unix.c \
+	$(MONO_DIR)/eglib/src/ghashtable.c \
+	$(MONO_DIR)/eglib/src/gstr.c \
+	$(MONO_DIR)/eglib/src/vasprintf.c
+
+MONO_SOURCES = \
 	$(MONO_DIR)/mono/metadata/sgen-gc.c		\
 	$(MONO_DIR)/mono/metadata/sgen-alloc.c	\
 	$(MONO_DIR)/mono/metadata/sgen-nursery-allocator.c	\
@@ -31,26 +42,35 @@ SGEN_SOURCES = \
 	$(MONO_DIR)/mono/utils/lock-free-queue.c	\
 	$(MONO_DIR)/mono/utils/lock-free-alloc.c	\
 	$(MONO_DIR)/mono/utils/lock-free-array-queue.c	\
-	$(MONO_DIR)/mono/utils/hazard-pointer.c	\
-	simple-client.c
+	$(MONO_DIR)/mono/utils/hazard-pointer.c
 
-SGEN_OBJECTS=$(SGEN_SOURCES:%.c=%.o)
+SGEN_SOURCES= $(EGLIB_SOURCES) $(MONO_SOURCES)
 
-CFLAGS=-std=gnu99 -Wall -DHAVE_SGEN_GC -DSGEN_CLIENT_HEADER=\"simple-client.h\" -DSGEN_WITHOUT_MONO -O0 -g -I. -I./$(MONO_DIR)/ $(SOURCES) $(shell pkg-config --cflags glib-2.0)
-LDFLAGS=-lpthread -lm $(shell pkg-config --libs glib-2.0)
+INCLUDES=				\
+	-I.				\
+	-I./$(MONO_DIR)/		\
+	-I./$(MONO_DIR)/eglib/src
+
+CFLAGS=-std=gnu99 -Wall -DHAVE_SGEN_GC -DSGEN_CLIENT_HEADER=\"simple-client.h\" -DSGEN_WITHOUT_MONO -O0 -g $(INCLUDES)
+LDFLAGS=-lpthread -lm
 
 
-all: test-sgen libpystonsgen.a mono-config.h
+all: test-sgen
 
-test_sgen_SOURCES=$(SGEN_SOURCES) test-sgen.c
+libsgen_SOURCES=$(SGEN_SOURCES)
+libsgen_OBJECTS=$(libsgen_SOURCES:%.c=%.o)
+
+libsgen.a: $(libsgen_OBJECTS)
+	ar cru $@ $(libsgen_OBJECTS)
+
+test_sgen_SOURCES=test-sgen.c simple-client.c
 test_sgen_OBJECTS=$(test_sgen_SOURCES:%.c=%.o)
 
-test-sgen: $(test_sgen_OBJECTS) Makefile
-	$(CC) -o $@ $(CFLAGS) $(test_sgen_OBJECTS) $(LDFLAGS)
+test-sgen: $(test_sgen_OBJECTS) Makefile libsgen.a
+	$(CC) -o $@ $(test_sgen_OBJECTS) libsgen.a $(LDFLAGS)
 
+simple-client.o: simple-client.h
 
-libpystonsgen.a: $(SGEN_OBJECTS)
-	ar cru $@ $(SGEN_OBJECTS)
-
-mono-config.h: mono/config.h
-	cp $< $@
+clean:
+	rm -f test-sgen libsgen.a
+	$(MAKE) -C mono/ clean
