@@ -35,7 +35,7 @@ run (void)
 		g_assert (new_gcobj->vtable == &cons_vtable);
 		ConsObject *new_cons = (ConsObject*)new_gcobj;
 		g_assert (!new_cons->car && !new_cons->cdr);
-		mono_gc_wbarrier_generic_store (&new_cons->cdr, new_gcobj);
+		mono_gc_wbarrier_generic_store (&new_cons->cdr, (GCObject*)cons);
 		cons = new_cons;
 		//sgen_gc_collect (GENERATION_NURSERY);
 		//check_list (cons, i + 1);
@@ -47,12 +47,12 @@ int
 main (void)
 {
 	void *dummy;
-	gsize cons_bitmap = 12;
+	gsize cons_bitmap = 6;
 
 	sgen_gc_init ();
 	sgen_thread_register (&main_thread_info, &dummy);
 
-	cons_vtable.descriptor = (mword)mono_gc_make_descr_for_object (&cons_bitmap, 4, sizeof (ConsObject));
+	cons_vtable.descriptor = (mword)mono_gc_make_descr_for_object (&cons_bitmap, 3, sizeof (ConsObject));
 
 	run ();
 
