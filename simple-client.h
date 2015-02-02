@@ -10,7 +10,6 @@ typedef struct {
 typedef struct _GCObject GCObject;
 struct _GCObject {
 	GCVTable *vtable;
-	void* synchronisation;
 };
 
 typedef struct {
@@ -35,8 +34,11 @@ sgen_vtable_get_descriptor (GCVTable *vtable)
 static mword
 sgen_client_slow_object_get_size (GCVTable *vtable, GCObject* o)
 {
-	if ((vtable->descriptor & DESC_TYPE_MASK) == DESC_TYPE_VECTOR)
+	int desc_type = vtable->descriptor & DESC_TYPE_MASK;
+	if (desc_type == DESC_TYPE_VECTOR)
 		return ((GCArray*)o)->size;
+	else if (desc_type == DESC_TYPE_BITMAP)
+	  return vtable->descriptor & ~DESC_TYPE_MASK;
 	return sizeof (GCObject);
 }
 
@@ -128,8 +130,8 @@ enum {
 	INTERNAL_MEM_MAX = INTERNAL_MEM_FIRST_CLIENT
 };
 
-#define SGEN_CLIENT_OBJECT_HEADER_SIZE		(sizeof (void*))
-#define SGEN_CLIENT_MINIMUM_OBJECT_SIZE		(sizeof (GCObject))
+#define SGEN_CLIENT_OBJECT_HEADER_SIZE		(sizeof (GCObject))
+#define SGEN_CLIENT_MINIMUM_OBJECT_SIZE		SGEN_CLIENT_OBJECT_HEADER_SIZE
 
 static inline size_t
 sgen_client_array_element_size (GCVTable *gc_vtable)
